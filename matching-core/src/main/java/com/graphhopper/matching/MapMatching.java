@@ -17,33 +17,27 @@
  */
 package com.graphhopper.matching;
 
-import com.graphhopper.routing.VirtualEdgeIteratorState;
+import com.bmw.hmm.SequenceState;
+import com.bmw.hmm.ViterbiAlgorithm;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.matching.util.HmmProbabilities;
 import com.graphhopper.matching.util.TimeStep;
-import com.graphhopper.routing.weighting.Weighting;
-import com.bmw.hmm.SequenceState;
-import com.bmw.hmm.ViterbiAlgorithm;
-import com.graphhopper.routing.AlgorithmOptions;
-import com.graphhopper.routing.Path;
-import com.graphhopper.routing.QueryGraph;
-import com.graphhopper.routing.RoutingAlgorithm;
-import com.graphhopper.routing.RoutingAlgorithmFactory;
+import com.graphhopper.routing.*;
 import com.graphhopper.routing.ch.CHAlgoFactoryDecorator;
 import com.graphhopper.routing.ch.PrepareContractionHierarchies;
-import com.graphhopper.routing.util.*;
+import com.graphhopper.routing.util.DefaultEdgeFilter;
+import com.graphhopper.routing.util.EdgeFilter;
+import com.graphhopper.routing.util.HintsMap;
 import com.graphhopper.routing.weighting.FastestWeighting;
+import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.CHGraph;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.index.LocationIndexTree;
 import com.graphhopper.storage.index.QueryResult;
 import com.graphhopper.util.*;
 import com.graphhopper.util.shapes.GHPoint;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -183,11 +177,14 @@ public class MapMatching {
         List<TimeStep<GPXExtension, GPXEntry, Path>> timeSteps = createTimeSteps(filteredGPXEntries, queriesPerEntry, queryGraph);
 
         // viterbify:
-        List<SequenceState<GPXExtension, GPXEntry, Path>> seq = computeViterbiSequence(timeSteps, gpxList, queryGraph);
+        List<SequenceState<GPXExtension, GPXEntry, Path>> seq = computeViterbiSequence(timeSteps,
+                gpxList.size(), queryGraph);
 
         // finally, extract the result:
         final EdgeExplorer explorer = queryGraph.createEdgeExplorer(edgeFilter);
-        MatchResult matchResult = computeMatchResult(seq, filteredGPXEntries, queriesPerEntry, explorer);
+
+        // Needs original gpxList to compute stats.
+        MatchResult matchResult = computeMatchResult(seq, gpxList, queriesPerEntry, explorer);
 
         return matchResult;
     }
@@ -260,7 +257,7 @@ public class MapMatching {
     	                }
                     }
         			assert virtualEdges.size() == 2;
-        			
+
         			// create a candidate for each: the candidate being the querypoint plus the virtual edge to favour. Note
         			// that we favour the virtual edge by *unfavoring* the rest, so we need to record these.
         			VirtualEdgeIteratorState e1 = virtualEdges.get(0);
@@ -284,7 +281,7 @@ public class MapMatching {
         			// just add the real edge, undirected
         			GPXExtension candidate = new GPXExtension(gpxEntry, qr);
         			candidates.add(candidate);
-        		} 
+        		}
         	}
                 
             final TimeStep<GPXExtension, GPXEntry, Path> timeStep = new TimeStep<>(gpxEntry, candidates);
@@ -294,8 +291,8 @@ public class MapMatching {
     }
 
     private List<SequenceState<GPXExtension, GPXEntry, Path>> computeViterbiSequence(
-            List<TimeStep<GPXExtension, GPXEntry, Path>> timeSteps, List<GPXEntry> gpxList,
-            final QueryGraph queryGraph) {
+            List<TimeStep<GPXExtension, GPXEntry, Path>> timeSteps, int originalGpxEntriesCount,
+            QueryGraph queryGraph) {
         final HmmProbabilities probabilities
                 = new HmmProbabilities(measurementErrorSigma, transitionProbabilityBeta);
         final ViterbiAlgorithm<GPXExtension, GPXEntry, Path> viterbi = new ViterbiAlgorithm<>();
@@ -328,9 +325,10 @@ public class MapMatching {
                 }
 
                 throw new RuntimeException("Sequence is broken for submitted track at time step "
-                        + timeStepCounter + " (" + gpxList.size() + " points). " + likelyReasonStr
-                        + "observation:" + timeStep.observation + ", "
-                        + timeStep.candidates.size() + " candidates: " + getSnappedCandidates(timeStep.candidates)
+                        + timeStepCounter + " (" + originalGpxEntriesCount + " points). "
+                        + likelyReasonStr + "observation:" + timeStep.observation + ", "
+                        + timeStep.candidates.size() + " candidates: "
+                        + getSnappedCandidates(timeStep.candidates)
                         + ". If a match is expected consider increasing max_visited_nodes.");
             }
 
