@@ -75,9 +75,9 @@ public class MatchResultToJson {
 
             for (GPXExtension extension : edgeMatch.getGpxExtensions()) {
                 JSONObject wpt = new JSONObject();
-                wpt.put("x", extension.getQueryResult().getSnappedPoint().lon);
-                wpt.put("y", extension.getQueryResult().getSnappedPoint().lat);
-                wpt.put("timestamp", extension.getEntry().getTime());
+                wpt.put("x", extension.queryResult.getSnappedPoint().lon);
+                wpt.put("y", extension.queryResult.getSnappedPoint().lat);
+                wpt.put("timestamp", extension.entry.getTime());
                 wpts.put(wpt);
             }
 

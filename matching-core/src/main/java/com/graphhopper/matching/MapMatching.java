@@ -402,7 +402,7 @@ public class MapMatching {
                                               HmmProbabilities probabilities) {
         for (GPXExtension candidate : timeStep.candidates) {
             // road distance difference in meters
-            final double distance = candidate.getQueryResult().getQueryDistance();
+            final double distance = candidate.queryResult.getQueryDistance();
             timeStep.addEmissionLogProbability(candidate,
                     probabilities.emissionLogProbability(distance));
         }
@@ -423,20 +423,20 @@ public class MapMatching {
         for (GPXExtension from : prevTimeStep.candidates) {
             for (GPXExtension to : timeStep.candidates) {
                 // enforce heading if required:
-                if (from.isDirected()) {
-                    queryGraph.unfavorVirtualEdgePair(from.getQueryResult().getClosestNode(),
+                if (from.isDirected) {
+                    queryGraph.unfavorVirtualEdgePair(from.queryResult.getClosestNode(),
                             from.incomingVirtualEdge.getEdge());
                 }
-                if (to.isDirected()) {
-                    queryGraph.unfavorVirtualEdgePair(to.getQueryResult().getClosestNode(),
+                if (to.isDirected) {
+                    queryGraph.unfavorVirtualEdgePair(to.queryResult.getClosestNode(),
                             to.outgoingVirtualEdge.getEdge());
                 }
 
                 // Need to create a new routing algorithm for every routing.
                 RoutingAlgorithm algo = algoFactory.createAlgo(queryGraph, algoOptions);
 
-                final Path path = algo.calcPath(from.getQueryResult().getClosestNode(),
-                        to.getQueryResult().getClosestNode());
+                final Path path = algo.calcPath(from.queryResult.getClosestNode(),
+                        to.queryResult.getClosestNode());
 
                 if (path.isFound()) {
                     timeStep.addRoadPath(from, to, path);

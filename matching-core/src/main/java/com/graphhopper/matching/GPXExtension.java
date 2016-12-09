@@ -22,35 +22,37 @@ import com.graphhopper.storage.index.QueryResult;
 import com.graphhopper.util.GPXEntry;
 
 /**
+ * Represents a map matching candidate.
  *
  * @author Peter Karich
+ * @author kodonnell
+ * @author Stefan Holder
  */
 public class GPXExtension {
-    final GPXEntry entry;
-    final QueryResult queryResult;
-    private boolean directed;
-    public VirtualEdgeIteratorState incomingVirtualEdge;
-    public VirtualEdgeIteratorState outgoingVirtualEdge;
+    public final GPXEntry entry;
+    public final QueryResult queryResult;
+    public final boolean isDirected;
+    public final VirtualEdgeIteratorState incomingVirtualEdge;
+    public final VirtualEdgeIteratorState outgoingVirtualEdge;
 
     public GPXExtension(GPXEntry entry, QueryResult queryResult) {
         this.entry = entry;
         this.queryResult = queryResult;
-        this.directed = false;
+        this.isDirected = false;
+        this.incomingVirtualEdge = null;
+        this.outgoingVirtualEdge = null;
     }
     
     public GPXExtension(GPXEntry entry, QueryResult queryResult,
                         VirtualEdgeIteratorState incomingVirtualEdge,
                         VirtualEdgeIteratorState outgoingVirtualEdge) {
-        this(entry, queryResult);
+        this.entry = entry;
+        this.queryResult = queryResult;
+        this.isDirected = true;
         this.incomingVirtualEdge = incomingVirtualEdge;
         this.outgoingVirtualEdge = outgoingVirtualEdge;
-        this.directed = true;
     }
 
-    public boolean isDirected() {
-        return directed;
-    }
-        
     @Override
     public String toString() {
         return "GPXExtension{" +
@@ -60,13 +62,5 @@ public class GPXExtension {
                 ", incomingEdge=" + incomingVirtualEdge +
                 ", outgoingEdge=" + outgoingVirtualEdge +
                 '}';
-    }
-
-    public QueryResult getQueryResult() {
-        return this.queryResult;
-    }
-
-    public GPXEntry getEntry() {
-        return entry;
     }
 }
