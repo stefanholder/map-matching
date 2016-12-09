@@ -38,7 +38,9 @@ public class GPXExtension {
         this.directed = false;
     }
     
-    public GPXExtension(GPXEntry entry, QueryResult queryResult, VirtualEdgeIteratorState incomingVirtualEdge, VirtualEdgeIteratorState outgoingVirtualEdge) {
+    public GPXExtension(GPXEntry entry, QueryResult queryResult,
+                        VirtualEdgeIteratorState incomingVirtualEdge,
+                        VirtualEdgeIteratorState outgoingVirtualEdge) {
         this(entry, queryResult);
         this.incomingVirtualEdge = incomingVirtualEdge;
         this.outgoingVirtualEdge = outgoingVirtualEdge;
