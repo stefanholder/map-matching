@@ -71,7 +71,6 @@ public class MapMatchingTest {
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> algoOptions() {
-
         // create hopper instance with CH enabled
         CarFlagEncoder encoder = new CarFlagEncoder();
         TestGraphHopper hopper = new TestGraphHopper();
@@ -80,17 +79,23 @@ public class MapMatchingTest {
         hopper.setEncodingManager(new EncodingManager(encoder));
         hopper.importOrLoad();
 
+        // Reduce penalty to allow U-turns in testUTurns
+        final double HEADING_PENALTY = 50;
+
         // force CH
         AlgorithmOptions chOpts = AlgorithmOptions.start()
                 .maxVisitedNodes(1000)
-                .hints(new PMap().put(Parameters.CH.DISABLE, false))
+                .hints(new PMap().put(Parameters.CH.DISABLE, false)
+                        //TODO Fix that CH routing still uses default penalty of 300
+                        .put(Parameters.Routing.HEADING_PENALTY, HEADING_PENALTY))
                 .build();
 
         // flexible should fall back to defaults
-        AlgorithmOptions flexibleOpts = AlgorithmOptions.start().
+        AlgorithmOptions flexibleOpts = AlgorithmOptions.start()
                 // TODO: fewer nodes than for CH are possible (short routes & different finish condition & higher degree graph)
-                // maxVisitedNodes(20).                
-                build();
+                // .maxVisitedNodes(20)
+                .hints(new PMap().put(Parameters.Routing.HEADING_PENALTY, HEADING_PENALTY))
+                .build();
 
         return Arrays.asList(new Object[][]{
             {"non-CH", hopper, flexibleOpts},
@@ -179,8 +184,9 @@ public class MapMatchingTest {
                 new GHPoint(51.23, 12.18),
                 new GHPoint(51.45, 12.59));
         MatchResult mr = mapMatching.doWork(inputGPXEntries);
-        assertEquals(mr.getMatchLength(), 57653, 1);
-        assertEquals(mr.getMatchMillis(), 2748186, 1);
+
+        assertEquals(57650, mr.getMatchLength(), 1);
+        assertEquals(2747796, mr.getMatchMillis(), 1);
 
         // not OK when we only allow a small number of visited nodes:
         AlgorithmOptions opts = AlgorithmOptions.start(algoOptions).maxVisitedNodes(1).build();
@@ -219,6 +225,10 @@ public class MapMatchingTest {
     @Test
     public void testLoop() {
         MapMatching mapMatching = new MapMatching(hopper, algoOptions);
+
+        // Need to reduce GPS accuracy because too many GPX are filtered out otherwise.
+        mapMatching.setMeasurementErrorSigma(40);
+
         List<GPXEntry> inputGPXEntries = new GPXFile()
                 .doImport("./src/test/resources/tour2-with-loop.gpx").getEntries();
         MatchResult mr = mapMatching.doWork(inputGPXEntries);
@@ -265,12 +275,14 @@ public class MapMatchingTest {
         // with large measurement error, we expect no U-turn
         mapMatching.setMeasurementErrorSigma(50);
         MatchResult mr = mapMatching.doWork(inputGPXEntries);
+
         assertEquals(Arrays.asList("Gustav-Adolf-Straße", "Gustav-Adolf-Straße", "Funkenburgstraße",
                 "Funkenburgstraße"), fetchStreets(mr.getEdgeMatches()));
 
         // with small measurement error, we expect the U-turn
         mapMatching.setMeasurementErrorSigma(10);
         mr = mapMatching.doWork(inputGPXEntries);
+
         assertEquals(
                 Arrays.asList("Gustav-Adolf-Straße", "Gustav-Adolf-Straße", "Funkenburgstraße",
                         "Funkenburgstraße", "Funkenburgstraße", "Funkenburgstraße"),
