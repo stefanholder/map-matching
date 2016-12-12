@@ -486,15 +486,8 @@ public class MapMatching {
                                            List<GPXEntry> gpxList,
                                            List<List<QueryResult>> queriesPerEntry,
                                            EdgeExplorer explorer) {
-        // every virtual edge maps to its real edge where the orientation is already correct!
-        // TODO use traversal key instead of string!
-        final Map<String, EdgeIteratorState> virtualEdgesMap = new HashMap<>();
-        for (List<QueryResult> queryResults: queriesPerEntry) {
-            for (QueryResult qr: queryResults) {
-                fillVirtualEdges(virtualEdgesMap, explorer, qr);
-            }
-        }
-
+        final Map<String, EdgeIteratorState> virtualEdgesMap = createVirtualEdgesMap(
+                queriesPerEntry, explorer);
         MatchResult matchResult = computeMatchedEdges(seq, virtualEdgesMap);
         computeGpxStats(gpxList, matchResult);
 
@@ -587,29 +580,36 @@ public class MapMatching {
     }
 
     /**
-     * Fills virtualEdgesMap, where every virtual edge maps to its real edge with correct
-     * orientation.
+     * Returns a map where every virtual edge maps to its real edge with correct orientation.
      */
-    private void fillVirtualEdges(Map<String, EdgeIteratorState> virtualEdgesMap,
-                                  EdgeExplorer explorer, QueryResult qr) {
-        if (isVirtualNode(qr.getClosestNode())) {
-            EdgeIterator iter = explorer.setBaseNode(qr.getClosestNode());
-            while (iter.next()) {
-                int node = traverseToClosestRealAdj(explorer, iter);
-                if (node == qr.getClosestEdge().getAdjNode()) {
-                    virtualEdgesMap.put(virtualEdgesMapKey(iter),
-                            qr.getClosestEdge().detach(false));
-                    virtualEdgesMap.put(reverseVirtualEdgesMapKey(iter),
-                            qr.getClosestEdge().detach(true));
-                } else if (node == qr.getClosestEdge().getBaseNode()) {
-                    virtualEdgesMap.put(virtualEdgesMapKey(iter), qr.getClosestEdge().detach(true));
-                    virtualEdgesMap.put(reverseVirtualEdgesMapKey(iter),
-                            qr.getClosestEdge().detach(false));
-                } else {
-                    throw new RuntimeException();
+    private Map<String, EdgeIteratorState> createVirtualEdgesMap(
+            List<List<QueryResult>> queriesPerEntry, EdgeExplorer explorer) {
+        // TODO For map key, use the traversal key instead of string!
+        Map<String, EdgeIteratorState> virtualEdgesMap = new HashMap<>();
+        for (List<QueryResult> queryResults: queriesPerEntry) {
+            for (QueryResult qr: queryResults) {
+                if (isVirtualNode(qr.getClosestNode())) {
+                    EdgeIterator iter = explorer.setBaseNode(qr.getClosestNode());
+                    while (iter.next()) {
+                        int node = traverseToClosestRealAdj(explorer, iter);
+                        if (node == qr.getClosestEdge().getAdjNode()) {
+                            virtualEdgesMap.put(virtualEdgesMapKey(iter),
+                                    qr.getClosestEdge().detach(false));
+                            virtualEdgesMap.put(reverseVirtualEdgesMapKey(iter),
+                                    qr.getClosestEdge().detach(true));
+                        } else if (node == qr.getClosestEdge().getBaseNode()) {
+                            virtualEdgesMap.put(virtualEdgesMapKey(iter),
+                                    qr.getClosestEdge().detach(true));
+                            virtualEdgesMap.put(reverseVirtualEdgesMapKey(iter),
+                                    qr.getClosestEdge().detach(false));
+                        } else {
+                            throw new RuntimeException();
+                        }
+                    }
                 }
             }
         }
+        return virtualEdgesMap;
     }
 
     private String virtualEdgesMapKey(EdgeIteratorState iter) {
