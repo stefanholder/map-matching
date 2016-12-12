@@ -72,7 +72,7 @@ public class MapMatching {
     private final Graph routingGraph;
     private final LocationIndexMatch locationIndex;
     private double measurementErrorSigma = 50.0;
-    private double transitionProbabilityBeta = 0.00959442;
+    private double transitionProbabilityBeta = 2.0;
     private final int nodeCount;
     private DistanceCalc distanceCalc = new DistancePlaneProjection();
     private final RoutingAlgorithmFactory algoFactory;
@@ -452,8 +452,7 @@ public class MapMatching {
                             from, to, penalizedPathDistance);
 
                     final double transitionLogProbability = probabilities
-                            .transitionLogProbability(penalizedPathDistance, linearDistance,
-                                    timeDiff);
+                            .transitionLogProbability(penalizedPathDistance, linearDistance);
                     timeStep.addTransitionLogProbability(from, to, transitionLogProbability);
                 } else {
                     logger.info("No path found for from: {}, to: {}", from, to);
