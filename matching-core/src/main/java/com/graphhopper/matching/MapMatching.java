@@ -178,7 +178,7 @@ public class MapMatching {
                     + " filtered GPX entries (from " + gpxList.size()
                     + "), but two or more are needed");
         }
-        
+
         // now find each of the entries in the graph:
         final EdgeFilter edgeFilter = new DefaultEdgeFilter(algoOptions.getWeighting().getFlagEncoder());
 
@@ -259,6 +259,8 @@ public class MapMatching {
                     gpxEntry.getLat(), gpxEntry.getLon()) > 2 * measurementErrorSigma) {
                 filtered.add(gpxEntry);
                 prevEntry = gpxEntry;
+            } else {
+                logger.debug("Filter out GPX entry: {}", i + 1);
             }
         }
         return filtered;
